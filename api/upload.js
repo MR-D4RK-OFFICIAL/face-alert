@@ -1,21 +1,24 @@
-import fs from "fs";
-import path from "path";
+const fs = require("fs");
+const path = require("path");
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Only POST allowed" });
+const dataPath = path.join(__dirname, "data.json");
+
+module.exports = (req, res) => {
+  if (req.method === "POST") {
+    const { name, imageUrl } = req.body;
+    if (!name || !imageUrl)
+      return res.status(400).json({ message: "Missing fields" });
+
+    let data = [];
+    if (fs.existsSync(dataPath)) {
+      data = JSON.parse(fs.readFileSync(dataPath, "utf8"));
+    }
+
+    data.push({ name, imageUrl });
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+
+    return res.json({ message: "✅ Uploaded successfully!" });
+  } else {
+    res.status(405).json({ message: "Method not allowed" });
   }
-
-  const { name, imageUrl } = req.body;
-  if (!name || !imageUrl) {
-    return res.status(400).json({ message: "Name and Image URL required" });
-  }
-
-  const filePath = path.join(process.cwd(), "data.json");
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-
-  data.users.push({ name, imageUrl });
-
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  return res.status(200).json({ message: "Image saved successfully!" });
-}
+};
